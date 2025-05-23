@@ -1,4 +1,5 @@
 import { initializeApp } from "firebase/app";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { getAnalytics } from "firebase/analytics";
 import { getFirestore } from "firebase/firestore"; 
 
@@ -15,6 +16,8 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
-const db = getFirestore(app); //  هذا يربط Firestore
+const auth = getAuth(app);
+const db = getFirestore(app); 
 
 export { db };
+export { auth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut };
