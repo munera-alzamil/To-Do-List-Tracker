@@ -1,8 +1,17 @@
-const mongoose = require('mongoose');  
+// userService.js
+import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
+import db from '../firebase.js'; 
 
-const UserSchema = new mongoose.Schema({  
-    username: { type: String, required: true, unique: true, trim: true },  
-    password: { type: String, required: true }  
-});  
+const usersCollection = collection(db, 'users');
 
-module.exports = mongoose.model('User', UserSchema);
+
+export const createUser = async (userData) => {
+  return await addDoc(usersCollection, userData);
+};
+
+export const findUser = async (username, password) => {
+  const q = query(usersCollection, where('username', '==', username), where('password', '==', password));
+  const snapshot = await getDocs(q);
+  if (snapshot.empty) return null;
+  return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+};
