@@ -1,4 +1,7 @@
-document.addEventListener('DOMContentLoaded', () => {  
+import { signOut } from "firebase/auth";
+import { auth } from './firebase.js'; 
+document.addEventListener('DOMContentLoaded', () => { 
+  
   const taskInput = document.getElementById('task-input');  
   const dueDateInput = document.getElementById('due-date');  
   const priorityLevelSelect = document.getElementById('priority-level');  
@@ -87,7 +90,12 @@ document.addEventListener('DOMContentLoaded', () => {
   searchInput.addEventListener('input', filterTasks);  
 
   logoutButton?.addEventListener('click', () => {  
-    alert('Logging out...');  
-    window.location.href = "index.html";  
+    try {
+    await signOut(auth);
+    alert('loginig out');
+    window.location.href = "index.html";
+  } catch (error) {
+    alert('failed logining out' + error.message);
+  }  
   });  
 });
