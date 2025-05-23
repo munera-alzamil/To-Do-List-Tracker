@@ -15,3 +15,13 @@ export const findUser = async (username, password) => {
   if (snapshot.empty) return null;
   return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
 };
+export const findUserById = async (id) => {
+  const userRef = doc(db, 'users', id);
+  const userSnap = await getDoc(userRef);
+
+  if (userSnap.exists()) {
+    return { id: userSnap.id, ...userSnap.data() };
+  } else {
+    return null;
+  }
+};
