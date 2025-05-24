@@ -1,27 +1,148 @@
-import { signOut } from "firebase/auth";
-import { auth } from './firebase.js'; 
+import {
+  auth,
+  db,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  collection,
+  addDoc,
+  setDoc,
+  doc,
+  getDocs,
+  query,
+  where,
+  orderBy
+} from './firebase.js';
 
-document.addEventListener('DOMContentLoaded', () => {   
-  const taskInput = document.getElementById('task-input');  
-  const dueDateInput = document.getElementById('due-date');  
-  const priorityLevelSelect = document.getElementById('priority-level');  
-  const addTaskButton = document.getElementById('add-task-button');  
-  const taskList = document.getElementById('task-list');  
-  const progressBar = document.getElementById('progress-bar').querySelector('.inner-bar');  
-  const progressNumbers = document.getElementById('progress-numbers');  
-  const searchInput = document.getElementById('search-input');  
-  const logoutButton = document.getElementById('logout-button');  
+document.addEventListener('DOMContentLoaded', () => {
+  // --------------- Logout button -----------------
+  const logoutButton = document.getElementById('logout-button');
+  if (logoutButton) {
+    logoutButton.addEventListener('click', async () => {
+      try {
+        await signOut(auth);
+        alert('Logged out successfully.');
+        window.location.href = "index.html";
+      } catch (error) {
+        alert('Logout failed: ' + error.message);
+      }
+    });
+  }
 
-  // Add a new task  
-  async function addTask(){  
-    const taskText = taskInput.value.trim();  
-    const dueDate = dueDateInput.value;  
-    const priorityLevel = priorityLevelSelect.value;  
+  // --------------- Signup form -----------------
+  const signupForm = document.getElementById('signup-form');
+  if (signupForm) {
+    signupForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('signup-email').value.trim();
+      const password = document.getElementById('signup-password').value.trim();
 
-    if (taskText === '' || dueDate === '') {  
-      alert('Please enter a task and a due date!');  
-      return;  
-    }  
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // Save user info in Firestore
+        await setDoc(doc(db, 'users', user.uid), {
+          email: user.email,
+          skills: [],
+          createdAt: new Date()
+        });
+
+        alert('Signup successful! Please login.');
+        window.location.href = "login.html";
+      } catch (error) {
+        alert('Signup error: ' + error.message);
+      }
+    });
+  }
+
+  // --------------- Login form -----------------
+  const loginForm = document.getElementById('login-form');
+  if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value.trim();
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        alert('Login successful!');
+        window.location.href = "tasks.html";
+      } catch (error) {
+        alert('Login failed: ' + error.message);
+      }
+    });
+  }
+
+  // ---------------- Tasks page ------------------
+  const taskInput = document.getElementById('task-input');
+  if (!taskInput) return; // not tasks page
+
+  const dueDateInput = document.getElementById('due-date');
+  const priorityLevelSelect = document.getElementById('priority-level');
+  const addTaskButton = document.getElementById('add-task-button');
+  const taskList = document.getElementById('task-list');
+  const progressBar = document.getElementById('progress-bar').querySelector('.inner-bar');
+  const progressNumbers = document.getElementById('progress-numbers');
+  const searchInput = document.getElementById('search-input');
+
+  // Add a task UI element
+  function addTaskToUI(task) {
+    const listItem = document.createElement('li');
+    listItem.className = task.priority;
+
+    listItem.innerHTML = `
+      <input type="checkbox" />
+      <span class="task-text">${task.title}</span>
+      <span class="due-date">${task.dueDate}</span>
+      <span class="priority">${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}</span>
+      <div class="task-buttons">
+        <button class="edit-btn" aria-label="Edit this task"><i class="fas fa-edit"></i> Edit</button>
+        <button class="delete-btn" aria-label="Delete this task"><i class="fas fa-trash"></i> Delete</button>
+      </div>
+    `;
+
+    taskList.appendChild(listItem);
+  }
+
+  // Load tasks from Firestore for current user
+  async function loadTasks() {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    try {
+      const tasksQuery = query(
+        collection(db, 'tasks'),
+        where('userId', '==', user.uid),
+        orderBy('createdAt', 'asc')
+      );
+
+      const querySnapshot = await getDocs(tasksQuery);
+      taskList.innerHTML = ''; // clear existing tasks
+
+      querySnapshot.forEach(doc => {
+        const task = doc.data();
+        addTaskToUI(task);
+      });
+
+      updateProgress();
+    } catch (error) {
+      console.error('Error loading tasks:', error);
+    }
+  }
+
+  // Add new task handler
+  async function addTask() {
+    const taskText = taskInput.value.trim();
+    const dueDate = dueDateInput.value;
+    const priorityLevel = priorityLevelSelect.value;
+
+    if (!taskText || !dueDate) {
+      alert('Please enter a task and a due date!');
+      return;
+    }
+
     const user = auth.currentUser;
     if (!user) {
       alert('You must be logged in to add a task.');
@@ -29,100 +150,83 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      const token = await user.getIdToken();
-
-      const response = await fetch('/api/tasks', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          title: taskText,
-          description: '',
-          dueDate,
-          priority: priorityLevel
-        })
+      await addDoc(collection(db, 'tasks'), {
+        userId: user.uid,
+        title: taskText,
+        description: '',
+        dueDate,
+        priority: priorityLevel,
+        createdAt: new Date()
       });
 
-      if (!response.ok) throw new Error('Failed to save task to database.');
-      
+      addTaskToUI({ title: taskText, dueDate, priority: priorityLevel });
 
-      // Add task to UI
-      const listItem = document.createElement('li');  
-      listItem.className = priorityLevel;  
-
-      listItem.innerHTML = `  
-      <input type="checkbox" />  
-      <span class="task-text">${taskText}</span>  
-      <span class="due-date">${dueDate}</span>  
-      <span class="priority">${priorityLevel.charAt(0).toUpperCase() + priorityLevel.slice(1)}</span>  
-      <div class="task-buttons">  
-       <button class="edit-btn" aria-label="Edit this task"><i class="fas fa-edit"></i> Edit</button>  
-       <button class="delete-btn" aria-label="Delete this task"><i class="fas fa-trash"></i> Delete</button>  
-      </div>  
-      `;  
-
-      taskList.appendChild(listItem);  
-      taskInput.value = '';  
-      dueDateInput.value = '';  
-      priorityLevelSelect.value = 'low';  
-      updateProgress();  
+      taskInput.value = '';
+      dueDateInput.value = '';
+      priorityLevelSelect.value = 'low';
+      updateProgress();
     } catch (error) {
-      alert('Error adding task: ' + error.message); } 
+      alert('Error adding task: ' + error.message);
+    }
   }
 
-  // Filter tasks by search input  
-  function filterTasks() {  
-    const searchTerm = searchInput.value.toLowerCase();  
-    const tasks = taskList.getElementsByTagName('li');  
-    for (let task of tasks) {  
-      const taskText = task.querySelector('.task-text').innerText.toLowerCase();  
-      task.style.display = taskText.includes(searchTerm) || searchTerm === '' ? 'flex' : 'none';  
-    }  
-  }  
+  // Filter tasks UI
+  function filterTasks() {
+    const searchTerm = searchInput.value.toLowerCase();
+    const tasks = taskList.getElementsByTagName('li');
 
-  // Update progress bar  
-  function updateProgress() {  
-    const totalTasks = taskList.children.length;  
-    const completedTasks = [...taskList.children].filter(t => t.querySelector('input[type="checkbox"]').checked).length;  
+    for (let task of tasks) {
+      const text = task.querySelector('.task-text').innerText.toLowerCase();
+      task.style.display = text.includes(searchTerm) || searchTerm === '' ? 'flex' : 'none';
+    }
+  }
 
-    progressBar.style.width = totalTasks === 0 ? '0' : `${(completedTasks / totalTasks) * 100}%`;  
-    progressNumbers.innerText = `${completedTasks}/${totalTasks}`;  
-  }  
+  // Update progress bar and text
+  function updateProgress() {
+    const total = taskList.children.length;
+    const completed = [...taskList.children].filter(el => el.querySelector('input[type="checkbox"]').checked).length;
 
-  // Handle task buttons and checkbox events  
-  taskList.addEventListener('click', (event) => {  
-    if (event.target.classList.contains('delete-btn')) {  
-      event.target.closest('li').remove();  
-      updateProgress();  
-    } else if (event.target.classList.contains('edit-btn')) {  
-      const listItem = event.target.closest('li');  
-      taskInput.value = listItem.querySelector('.task-text').innerText;  
-      dueDateInput.value = listItem.querySelector('.due-date').innerText;  
-      priorityLevelSelect.value = listItem.className;  
-      listItem.remove();  
-      updateProgress();  
-    } else if (event.target.type === 'checkbox') {  
-      updateProgress();  
-    }  
-  });  
+    progressBar.style.width = total === 0 ? '0' : `${(completed / total) * 100}%`;
+    progressNumbers.innerText = `${completed}/${total}`;
+  }
 
-  addTaskButton.addEventListener('click', addTask);  
+  // Handle task list events (edit, delete, checkbox)
+  taskList.addEventListener('click', (e) => {
+    const target = e.target;
+    if (target.classList.contains('delete-btn')) {
+      target.closest('li').remove();
+      updateProgress();
+    } else if (target.classList.contains('edit-btn')) {
+      const listItem = target.closest('li');
+      taskInput.value = listItem.querySelector('.task-text').innerText;
+      dueDateInput.value = listItem.querySelector('.due-date').innerText;
+      priorityLevelSelect.value = listItem.className;
+      listItem.remove();
+      updateProgress();
+    }
+  });
 
-  taskInput.addEventListener('keypress', (event) => {  
-    if (event.key === 'Enter') addTask();  
-  });  
+  taskList.addEventListener('change', (e) => {
+    if (e.target.type === 'checkbox') {
+      updateProgress();
+    }
+  });
 
-  searchInput.addEventListener('input', filterTasks);  
+  addTaskButton.addEventListener('click', addTask);
 
-  logoutButton?.addEventListener('click', async () => {  
-    try {
-    await signOut(auth);
-    alert('logging out');
-    window.location.href = "index.html";
-  } catch (error) {
-    alert('failed to log out' + error.message);
-  }  
+  taskInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') addTask();
+  });
+
+  searchInput.addEventListener('input', filterTasks);
+
+  // Listen for auth state changes:
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      loadTasks();
+    } else {
+      taskList.innerHTML = '';
+      updateProgress();
+    }
+  });
 });
-})
