@@ -1,7 +1,7 @@
 import { signOut } from "firebase/auth";
 import { auth } from './firebase.js'; 
-
-document.addEventListener('DOMContentLoaded', () => {   
+document.addEventListener('DOMContentLoaded', () => { 
+  
   const taskInput = document.getElementById('task-input');  
   const dueDateInput = document.getElementById('due-date');  
   const priorityLevelSelect = document.getElementById('priority-level');  
@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const logoutButton = document.getElementById('logout-button');  
 
   // Add a new task  
-  async function addTask(){  
+  function addTask() {  
     const taskText = taskInput.value.trim();  
     const dueDate = dueDateInput.value;  
     const priorityLevel = priorityLevelSelect.value;  
@@ -22,60 +22,33 @@ document.addEventListener('DOMContentLoaded', () => {
       alert('Please enter a task and a due date!');  
       return;  
     }  
-    const user = auth.currentUser;
-    if (!user) {
-      alert('You must be logged in to add a task.');
-      return;
-    }
 
-    try {
-      const token = await user.getIdToken();
+    const listItem = document.createElement('li');  
+    listItem.className = priorityLevel;  
 
-      const response = await fetch('/api/tasks', {
-        method: 'POST',
-        headers: {
-          'Authorization': Bearer ${token},
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          title: taskText,
-          description: '',
-          dueDate,
-          priority: priorityLevel
-        })
-      });
-
-      if (!response.ok) throw new Error('Failed to save task to database.');
-      
-
-      // Add task to UI
-      const listItem = document.createElement('li');  
-      listItem.className = priorityLevel;  
-
-      listItem.innerHTML = `  
+    listItem.innerHTML = `  
       <input type="checkbox" />  
       <span class="task-text">${taskText}</span>  
       <span class="due-date">${dueDate}</span>  
       <span class="priority">${priorityLevel.charAt(0).toUpperCase() + priorityLevel.slice(1)}</span>  
       <div class="task-buttons">  
-       <button class="edit-btn" aria-label="Edit this task"><i class="fas fa-edit"></i> Edit</button>  
-       <button class="delete-btn" aria-label="Delete this task"><i class="fas fa-trash"></i> Delete</button>  
+        <button class="edit-btn" aria-label="Edit this task"><i class="fas fa-edit"></i> Edit</button>  
+        <button class="delete-btn" aria-label="Delete this task"><i class="fas fa-trash"></i> Delete</button>  
       </div>  
-      `;  
+    `;  
 
-      taskList.appendChild(listItem);  
-      taskInput.value = '';  
-      dueDateInput.value = '';  
-      priorityLevelSelect.value = 'low';  
-      updateProgress();  
-    } catch (error) {
-      alert('Error adding task: ' + error.message); } 
-  }
+    taskList.appendChild(listItem);  
+    taskInput.value = '';  
+    dueDateInput.value = '';  
+    priorityLevelSelect.value = 'low';  
+    updateProgress();  
+  }  
 
   // Filter tasks by search input  
   function filterTasks() {  
     const searchTerm = searchInput.value.toLowerCase();  
     const tasks = taskList.getElementsByTagName('li');  
+
     for (let task of tasks) {  
       const taskText = task.querySelector('.task-text').innerText.toLowerCase();  
       task.style.display = taskText.includes(searchTerm) || searchTerm === '' ? 'flex' : 'none';  
@@ -119,10 +92,10 @@ document.addEventListener('DOMContentLoaded', () => {
   logoutButton?.addEventListener('click', async () => {  
     try {
     await signOut(auth);
-    alert('logging out');
+    alert('loginig out');
     window.location.href = "index.html";
   } catch (error) {
-    alert('failed to log out' + error.message);
+    alert('failed logining out' + error.message);
   }  
+  });  
 });
-})
