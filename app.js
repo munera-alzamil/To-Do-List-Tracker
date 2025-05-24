@@ -29,7 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      firebase.auth().currentUser;
       const token = await user.getIdToken();
 
       const response = await fetch('/api/tasks', {
@@ -38,7 +37,6 @@ document.addEventListener('DOMContentLoaded', () => {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        
         body: JSON.stringify({
           title: taskText,
           description: '',
@@ -47,9 +45,8 @@ document.addEventListener('DOMContentLoaded', () => {
         })
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to save task to database.');
-      }
+      if (!response.ok) throw new Error('Failed to save task to database.');
+      
 
       // Add task to UI
       const listItem = document.createElement('li');  
@@ -67,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
       `;  
 
       taskList.appendChild(listItem);  
-     taskInput.value = '';  
+      taskInput.value = '';  
       dueDateInput.value = '';  
       priorityLevelSelect.value = 'low';  
       updateProgress();  
@@ -79,7 +76,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function filterTasks() {  
     const searchTerm = searchInput.value.toLowerCase();  
     const tasks = taskList.getElementsByTagName('li');  
-
     for (let task of tasks) {  
       const taskText = task.querySelector('.task-text').innerText.toLowerCase();  
       task.style.display = taskText.includes(searchTerm) || searchTerm === '' ? 'flex' : 'none';  
