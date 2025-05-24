@@ -4,6 +4,9 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 require('dotenv').config();
 
+import cors from 'cors';
+app.user(cors());
+
 const userRoutes = require('./routes/auth');
 const taskRoutes = require('./routes/tasks');
 const config = require('./config');

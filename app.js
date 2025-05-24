@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
+      firebase.auth().currentUser;
       const token = await user.getIdToken();
 
       const response = await fetch('/api/tasks', {
