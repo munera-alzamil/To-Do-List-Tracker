@@ -12,7 +12,7 @@ import {
   getDocs,
   query,
   where,
-  orderBy
+  // orderBy // Removed because it requires a Firestore composite index
 } from './firebase.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -112,10 +112,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!user) return;
 
     try {
+      // Removed orderBy to avoid index creation error
       const tasksQuery = query(
         collection(db, 'tasks'),
         where('userId', '==', user.uid),
-        orderBy('createdAt', 'asc')
+        // orderBy('createdAt', 'asc')  <-- removed because it requires an index
       );
 
       const querySnapshot = await getDocs(tasksQuery);
@@ -159,7 +160,8 @@ document.addEventListener('DOMContentLoaded', () => {
         createdAt: new Date()
       });
 
-      addTaskToUI({ title: taskText, dueDate, priority: priorityLevel });
+      // Reload tasks to include new task from Firestore
+      await loadTasks();
 
       taskInput.value = '';
       dueDateInput.value = '';
