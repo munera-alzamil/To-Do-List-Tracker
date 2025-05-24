@@ -6,34 +6,27 @@
   <title>Tasks</title>  
   <link rel="stylesheet" href="style.css" />  
   <script src="https://kit.fontawesome.com/7ebe9a20b5.js" crossorigin="anonymous"></script>  
-
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js"></script>
-  <script src="firebase.js"></script>
 </head>  
 <body>  
   <div class="container">  
     <div class="header">  
       <button id="logout-button" class="btn-logout">Log Out</button>  
     </div>  
-
     <h1 class="title">To Do List</h1>  
     <input type="text" id="search-input" placeholder="Search tasks..." oninput="filterTasks()" class="search-input note-box" />  
     
-    <form id="taskForm" class="form-note input-area">
-      <input type="text" id="title" placeholder="Task title..." required />
-      <input type="text" id="description" placeholder="Description..." />
-      <input type="date" id="dueDate" required />
-      <select id="priority" required>
-        <option value="low">Low</option>
-        <option value="medium">Medium</option>
-        <option value="high">High</option>
-      </select>
-      <button type="submit" class="btn-primary">
-        <i class="fas fa-plus"></i> Add Task
-      </button>
-    </form>
+    <form class="form-note input-area">  
+      <input type="text" id="task-input" placeholder="Add a new task..." required />  
+      <input type="date" id="due-date" required />  
+      <select id="priority-level">  
+        <option value="low">Low</option>  
+        <option value="medium">Medium</option>  
+        <option value="high">High</option>  
+      </select>  
+      <button type="button" id="add-task-button" class="btn-primary">  
+        <i class="fas fa-plus"></i> Add Task  
+      </button>  
+    </form>  
     
     <div class="todos-container note-box">  
       <ul id="task-list" class="task-list"></ul>  
