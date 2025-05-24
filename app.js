@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const response = await fetch('/api/tasks', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': Bearer ${token},
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -58,8 +58,8 @@ document.addEventListener('DOMContentLoaded', () => {
       <span class="due-date">${dueDate}</span>  
       <span class="priority">${priorityLevel.charAt(0).toUpperCase() + priorityLevel.slice(1)}</span>  
       <div class="task-buttons">  
-      <button class="edit-btn" aria-label="Edit this task"><i class="fas fa-edit"></i> Edit</button>  
-      <button class="delete-btn" aria-label="Delete this task"><i class="fas fa-trash"></i> Delete</button>  
+       <button class="edit-btn" aria-label="Edit this task"><i class="fas fa-edit"></i> Edit</button>  
+       <button class="delete-btn" aria-label="Delete this task"><i class="fas fa-trash"></i> Delete</button>  
       </div>  
       `;  
 
