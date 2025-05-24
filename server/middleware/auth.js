@@ -1,20 +1,29 @@
-const jwt = require('jsonwebtoken');
-const { findUserById } = require('../models/userService');
+const admin = require('firebase-admin');
 
-module.exports = async (req, res, next) => {
-  const token = req.headers['authorization'];
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.applicationDefault() // or use serviceAccountKey
+  });
+}
 
-  if (!token) return res.status(401).send('Access denied.');
+const authMiddleware = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized: No token' });
+  }
+
+  const idToken = authHeader.split('Bearer ')[1];
 
   try {
-    const verified = jwt.verify(token, 'YOUR_SECRET_KEY'); // 
-    const user = await findUserById(verified.id);
-
-    if (!user) return res.status(401).send('User not found');
-
-    req.user = user;
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    req.user = {
+      id: decodedToken.uid,
+      email: decodedToken.email
+    };
     next();
   } catch (error) {
-    res.status(400).send('Invalid token.');
+  return res.status(401).json({ error: 'Unauthorized: Invalid token' });
   }
 };
+
+module.exports = authMiddleware;

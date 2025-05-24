@@ -2,23 +2,26 @@
 import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
 import db from '../firebase.js'; 
 
-const usersCollection = collection(db, 'users');
 
-
-export const createUser = async (userData) => {
-  return await addDoc(usersCollection, userData);
+export const createUser = async (userId, userData) => {
+  const userRef = doc(db, 'users', userId);
+  return await setDoc(userRef, userData);
 };
 
-export const findUser = async (username, password) => {
-  const q = query(usersCollection, where('username', '==', username), where('password', '==', password));
-  const snapshot = await getDocs(q);
-  if (snapshot.empty) return null;
-  return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+export const addTaskToUser = async (userId, taskData) => {
+  const tasksCollection = collection(doc(db, 'users', userId), 'tasks');
+  return await addDoc(tasksCollection, taskData);
 };
-export const findUserById = async (id) => {
-  const userRef = doc(db, 'users', id);
+
+export const getTasksForUser = async (userId) => {
+  const tasksCollection = collection(doc(db, 'users', userId), 'tasks');
+  const snapshot = await getDocs(tasksCollection);
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}; 
+
+export const findUserById = async (userId) => {
+  const userRef = doc(db, 'users', userId);
   const userSnap = await getDoc(userRef);
-
   if (userSnap.exists()) {
     return { id: userSnap.id, ...userSnap.data() };
   } else {

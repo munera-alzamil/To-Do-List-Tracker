@@ -1,38 +1,38 @@
 const express = require('express');  
 const router = express.Router();  
-const User = require('../models/User');  
-const bcrypt = require('bcrypt');  
+const jwt = require('jsonwebtoken')
+const { auth } = require('../../firebase'); 
 
-router.post('/signup', async (req, res) => {  
-    const { username, password } = req.body;  
+const { createUserWithEmailAndPassword, signInWithEmailAndPassword } = require('firebase/auth');
 
-    try {  
-        const hashedPassword = await bcrypt.hash(password, 10);  
-        const user = new User({ username, password: hashedPassword });  
-        await user.save();  
-        res.status(201).json({ message: 'User created!' });  
-    } catch (error) {  
-        res.status(400).json({ error: error.message });  
-    }  
-});  
+router.post('/signup', async (req, res) => {
+    const { email, password, username } = req.body;
+
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // creating JWT
+        const token = jwt.sign({ id: user.uid }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+        res.status(201).json({ message: 'User created!', token, uid: user.uid });
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
 
 router.post('/login', async (req, res) => {  
-    const { username, password } = req.body;  
+    const { email, password } = req.body;  
 
     try {  
-        const user = await User.findOne({ username });  
-        if (!user) {  
-            return res.status(400).json({ message: 'Invalid credentials' });  
-        }  
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);  
+       const user = userCredential.user;
+        
+       const token = jwt.sign({ id: user.uid }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-        const isMatch = await bcrypt.compare(password, user.password);  
-        if (!isMatch) {  
-            return res.status(400).json({ message: 'Invalid credentials' });  
-        }  
-
-        res.json({ message: 'Logged in successfully', userId: user._id });  
+        res.json({ message: 'Logged in successfully', token, uid: user.uid  });  
     } catch (error) {  
-        res.status(500).json({ error: error.message });  
+        res.status(400).json({ error: error.message });  
     }  
 });  
 

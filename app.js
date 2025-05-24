@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   searchInput.addEventListener('input', filterTasks);  
 
-  logoutButton?.addEventListener('click', () => {  
+  logoutButton?.addEventListener('click', async () => {  
     try {
     await signOut(auth);
     alert('loginig out');
